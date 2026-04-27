@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TW.AI — We Make AI Work for You</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@300;400;500;600;700;800&family=DM+Mono:ital,wght@0,300;0,400;0,500&family=VT323&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<style>
+:root{
+  --black:#080a08;
+  --surface:#0e110e;
+  --green:#00FF88;
+  --green-dim:rgba(0,255,136,0.07);
+  --green-glow:rgba(0,255,136,0.18);
+  --border:rgba(255,255,255,0.08);
+  --border-g:rgba(0,255,136,0.25);
+  --white:#f0f0f0;
+  --muted:rgba(240,240,240,0.5);
+  --faint:rgba(240,240,240,0.18);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--black);color:var(--white);font-family:'DM Mono',monospace;font-weight:300;line-height:1.6;overflow-x:hidden;cursor:none;}
+body.loading{overflow:hidden;}
+
+/* ─── CURSOR ─── */
+#cur{width:8px;height:8px;background:var(--green);border-radius:50%;position:fixed;top:0;left:0;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);}
+#cur-ring{width:34px;height:34px;border:1px solid rgba(0,255,136,.35);border-radius:50%;position:fixed;top:0;left:0;pointer-events:none;z-index:9998;transform:translate(-50%,-50%);transition:width .25s,height .25s,border-color .25s;}
+
+/* ─── DOT GRID ─── */
+.dot-bg{
+  position:absolute;inset:0;pointer-events:none;z-index:0;
+  background-image:radial-gradient(circle,rgba(0,255,136,0.22) 1px,transparent 1px);
+  background-size:26px 26px;
+  opacity:0.3;
+}
+
+/* ─── NOISE ─── */
+body::after{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");opacity:.022;pointer-events:none;z-index:8999;}
+
+/* ════════════════════════════════
+   GREEN CRT LOADER
+════════════════════════════════ */
+#loader{position:fixed;inset:0;z-index:99999;background:#020f02;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+#loader::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.1) 2px,rgba(0,0,0,0.1) 4px);z-index:1;pointer-events:none;}
+#loader::after{content:'';position:absolute;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");opacity:.045;z-index:1;pointer-events:none;animation:lflicker .12s infinite;}
+@keyframes lflicker{0%{opacity:.045}50%{opacity:.025}100%{opacity:.055}}
+.l-vignette{position:absolute;inset:0;z-index:2;background:radial-gradient(ellipse at center,transparent 50%,rgba(0,8,0,.75) 100%);pointer-events:none;}
+.l-inner{position:relative;z-index:3;display:flex;flex-direction:column;align-items:center;gap:1.6rem;width:min(88vw,480px);}
+.l-logo-row{display:flex;align-items:center;gap:1rem;}
+.l-chip{width:clamp(42px,9vw,64px);height:clamp(42px,9vw,64px);}
+.l-chip svg{width:100%;height:100%;}
+.l-word{font-family:'VT323',monospace;font-size:clamp(3.5rem,14vw,6rem);line-height:1;color:#00FF88;text-shadow:-2px 0 rgba(0,160,50,.5),2px 0 rgba(0,255,136,.25);letter-spacing:.05em;}
+.l-sub{font-family:'VT323',monospace;font-size:clamp(.9rem,3vw,1.3rem);color:#00cc66;text-align:center;letter-spacing:.1em;line-height:1.5;}
+.l-bar-wrap{width:100%;border:2px solid #00aa44;padding:3px;}
+.l-bar-inner{display:flex;gap:3px;height:20px;}
+.l-block{flex:1;background:transparent;transition:background .04s;}
+.l-block.on{background:#00FF88;}
+.l-pct{font-family:'VT323',monospace;font-size:clamp(.85rem,2.8vw,1.15rem);color:#008833;text-align:center;letter-spacing:.1em;}
+.l-copy{font-family:'VT323',monospace;font-size:clamp(.8rem,2.5vw,1.05rem);color:#006622;text-align:center;line-height:1.6;letter-spacing:.04em;}
+
+/* ════════════════════════════════
+   NAV
+════════════════════════════════ */
+nav{position:fixed;top:0;left:0;right:0;z-index:500;display:flex;align-items:center;justify-content:space-between;padding:1.1rem 2.5rem;border-bottom:1px solid transparent;transition:background .4s,border-color .4s;opacity:0;}
+nav.scrolled{background:rgba(8,10,8,.93);backdrop-filter:blur(18px);border-color:var(--border);}
+.n-logo{font-family:'Syne',sans-serif;font-weight:400;font-size:1.1rem;letter-spacing:.04em;color:var(--white);text-decoration:none;}
+.n-logo span{color:var(--green);}
+.n-links{display:flex;gap:2rem;list-style:none;}
+.n-links a{font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);text-decoration:none;transition:color .2s;}
+.n-links a:hover{color:var(--green);}
+.n-right{display:flex;align-items:center;gap:.75rem;}
+.n-cta{font-family:'DM Mono',monospace;font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:var(--black);background:var(--green);padding:.55rem 1.6rem;border-radius:999px;text-decoration:none;font-weight:400;transition:box-shadow .2s,opacity .2s;}
+.n-cta:hover{box-shadow:0 0 28px rgba(0,255,136,.4);opacity:.88;}
+.n-menu-btn{width:38px;height:38px;border-radius:50%;border:1px solid var(--border);background:rgba(255,255,255,.04);display:flex;align-items:center;justify-content:center;cursor:none;transition:border-color .2s;}
+.n-menu-btn:hover{border-color:var(--border-g);}
+.n-dots{display:grid;grid-template-columns:repeat(3,4px);gap:3px;}
+.n-dots span{width:4px;height:4px;border-radius:50%;background:var(--white);}
+
+/* MOBILE MENU */
+#mobile-menu{position:fixed;inset:0;z-index:800;background:rgba(8,10,8,.97);backdrop-filter:blur(20px);display:flex;flex-direction:column;padding:6rem 2.5rem 3rem;transform:translateX(100%);transition:transform .45s cubic-bezier(.77,0,.18,1);}
+#mobile-menu.open{transform:translateX(0);}
+.mm-item{font-family:'Syne',sans-serif;font-weight:500;font-size:2rem;color:var(--faint);padding:1.25rem 0;border-bottom:1px solid var(--border);letter-spacing:-.01em;cursor:none;transition:color .2s;}
+.mm-item:hover{color:var(--green);}
+.mm-close{position:absolute;top:1.5rem;right:2rem;font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);background:none;border:none;cursor:none;font-family:'DM Mono',monospace;}
+
+/* ════════════════════════════════
+   HERO
+════════════════════════════════ */
+.hero{min-height:100vh;display:flex;flex-direction:column;justify-content:flex-end;padding:0 2.5rem 4.5rem;position:relative;border-bottom:1px solid var(--border);overflow:hidden;}
+
+/* Green orb glow */
+.hero-orb{position:absolute;top:-10%;left:50%;transform:translateX(-50%);width:700px;height:700px;border-radius:50%;background:radial-gradient(circle,rgba(0,255,136,.06) 0%,transparent 65%);pointer-events:none;animation:breathe 8s ease-in-out infinite;}
+@keyframes breathe{0%,100%{transform:translateX(-50%) scale(1)}50%{transform:translateX(-50%) scale(1.12)}}
+
+.hero-badge{display:inline-flex;align-items:center;gap:.5rem;font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--green);border:1px solid var(--border-g);padding:.3rem .8rem;border-radius:999px;margin-bottom:1.5rem;background:var(--green-dim);width:fit-content;opacity:0;}
+.pulse{width:5px;height:5px;border-radius:50%;background:var(--green);animation:pulse 2s ease infinite;}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.7)}}
+
+.hero-h{font-family:'Syne',sans-serif;font-weight:500;font-size:clamp(3rem,10vw,8rem);line-height:.93;letter-spacing:-.025em;margin-bottom:2.5rem;opacity:0;}
+.hero-h .g{color:var(--green);}
+.hero-h .d{font-style:italic;font-weight:400;color:var(--muted);}
+
+.hero-bottom{display:flex;align-items:flex-end;justify-content:space-between;gap:2rem;opacity:0;}
+.hero-sub{font-size:.82rem;color:var(--muted);max-width:380px;line-height:1.9;}
+.hero-btns{display:flex;flex-direction:column;gap:.75rem;align-items:flex-end;}
+.btn-pill-primary{font-family:'DM Mono',monospace;font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:var(--black);background:var(--green);padding:.85rem 2rem;border-radius:999px;text-decoration:none;display:inline-block;font-weight:400;transition:box-shadow .2s,opacity .2s;}
+.btn-pill-primary:hover{box-shadow:0 0 32px rgba(0,255,136,.45);opacity:.88;}
+.btn-pill-outline{font-family:'DM Mono',monospace;font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:var(--white);border:1px solid var(--border);padding:.85rem 2rem;border-radius:999px;text-decoration:none;display:inline-block;transition:border-color .2s,color .2s;}
+.btn-pill-outline:hover{border-color:var(--border-g);color:var(--green);}
+
+/* AUDIO VISUALIZER */
+.visualizer{display:flex;align-items:flex-end;gap:3px;height:60px;margin-top:3rem;opacity:0;}
+.v-bar{width:6px;border-radius:3px 3px 0 0;background:var(--green);opacity:.6;animation:vbar 0s ease-in-out infinite alternate;}
+@keyframes vbar{from{transform:scaleY(.15)}to{transform:scaleY(1)}}
+
+/* ════════════════════════════════
+   MARQUEE
+════════════════════════════════ */
+.mwrap{overflow:hidden;border-bottom:1px solid var(--border);padding:.85rem 0;background:var(--surface);}
+.mtrack{display:flex;gap:2rem;width:max-content;animation:mq 28s linear infinite;}
+.mtrack:hover{animation-play-state:paused}
+@keyframes mq{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.mi{font-size:.6rem;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);white-space:nowrap;display:flex;align-items:center;gap:.85rem;}
+.md{width:4px;height:4px;border-radius:50%;background:var(--green);display:inline-block;}
+
+/* ════════════════════════════════
+   SECTIONS
+════════════════════════════════ */
+section{padding:6rem 2.5rem;border-bottom:1px solid var(--border);position:relative;}
+.sec-label{font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;color:var(--green);margin-bottom:1.25rem;}
+.sec-h{font-family:'Syne',sans-serif;font-weight:500;font-size:clamp(1.8rem,4vw,3.2rem);line-height:1.08;letter-spacing:-.01em;margin-bottom:1rem;}
+.sec-h .g{color:var(--green);}
+.rev{opacity:0;transform:translateY(32px);transition:opacity .65s ease,transform .65s ease;}
+.rev.on{opacity:1;transform:translateY(0);}
+
+/* ════════════════════════════════
+   USE CASES — pill tabs
+════════════════════════════════ */
+.uc-tabs{display:flex;gap:.75rem;margin-bottom:2.5rem;flex-wrap:wrap;}
+.uc-tab{font-family:'DM Mono',monospace;font-size:.6rem;letter-spacing:.08em;text-transform:uppercase;padding:.6rem 1.4rem;border-radius:999px;border:1px solid var(--border);color:var(--muted);cursor:none;transition:all .2s;background:none;}
+.uc-tab.active{background:var(--green);color:var(--black);border-color:var(--green);font-weight:500;}
+.uc-tab:hover:not(.active){border-color:var(--border-g);color:var(--green);}
+.uc-content{border-top:1px solid var(--border);padding-top:2rem;}
+.uc-big{font-family:'Syne',sans-serif;font-weight:500;font-size:clamp(1.8rem,4vw,3rem);line-height:1.1;margin-bottom:1rem;}
+.uc-big .g{color:var(--green);}
+.uc-desc{font-size:.82rem;color:var(--muted);max-width:480px;line-height:1.9;margin-bottom:2rem;}
+.uc-btns{display:flex;gap:.75rem;flex-wrap:wrap;}
+
+/* ════════════════════════════════
+   STATS — vapi.ai rain style
+════════════════════════════════ */
+#stats{background:var(--surface);padding:0;overflow:hidden;}
+.stats-rain{position:absolute;inset:0;pointer-events:none;z-index:0;}
+.rain-col{position:absolute;top:0;width:2px;display:flex;flex-direction:column;gap:6px;}
+.rain-seg{width:2px;height:clamp(12px,2.5vw,20px);border-radius:1px;opacity:0;animation:rain-fall 0s linear infinite;}
+@keyframes rain-fall{0%{opacity:0;transform:translateY(-20px)}10%{opacity:.5}80%{opacity:.4}100%{opacity:0;transform:translateY(100vh)}}
+
+.stat-item{position:relative;z-index:1;padding:5rem 2.5rem;border-bottom:1px solid var(--border);}
+.stat-item:last-child{border-bottom:none;}
+.stat-label{font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:1rem;display:block;}
+.stat-val{font-family:'Syne',sans-serif;font-weight:500;font-size:clamp(5rem,18vw,14rem);line-height:.9;letter-spacing:-.04em;color:var(--white);position:relative;display:inline-block;}
+.stat-val .g{color:var(--green);}
+
+/* ════════════════════════════════
+   SERVICES — 3-col grid like vapi features
+════════════════════════════════ */
+.svc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border:1px solid var(--border);margin-top:2.5rem;}
+.svc-card{background:var(--black);padding:2.25rem 1.75rem;position:relative;overflow:hidden;transition:background .3s;}
+.svc-card::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--green);transform:scaleX(0);transform-origin:left;transition:transform .3s;}
+.svc-card:hover{background:var(--surface);}
+.svc-card:hover::after{transform:scaleX(1);}
+.svc-n{font-size:.6rem;letter-spacing:.14em;color:var(--green);opacity:.55;margin-bottom:1.1rem;}
+.svc-name{font-family:'Syne',sans-serif;font-weight:500;font-size:1rem;margin-bottom:.65rem;}
+.svc-desc{font-size:.82rem;color:var(--muted);line-height:1.8;}
+
+/* ════════════════════════════════
+   HOW WE WORK — vapi "try in minutes" style
+════════════════════════════════ */
+#process{background:var(--surface);}
+.proc-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:2px;background:var(--border);margin-top:2.5rem;}
+.proc-card{background:var(--black);padding:3rem 2rem;transition:background .3s;}
+.proc-card:hover{background:var(--surface2,#131613);}
+.proc-n{font-size:.6rem;letter-spacing:.14em;color:var(--green);opacity:.6;margin-bottom:1.25rem;}
+.proc-t{font-family:'Syne',sans-serif;font-weight:400;font-size:1rem;margin-bottom:.7rem;}
+.proc-d{font-size:.82rem;color:var(--muted);line-height:1.8;}
+
+/* ════════════════════════════════
+   MANIFESTO
+════════════════════════════════ */
+.stmt{display:flex;align-items:baseline;gap:1.75rem;padding:1.75rem 0;border-bottom:1px solid var(--border);transition:padding-left .2s;cursor:default;}
+.stmt:first-child{border-top:1px solid var(--border);}
+.stmt:hover{padding-left:.6rem;}
+.stmt-n{font-size:.6rem;letter-spacing:.1em;color:var(--faint);flex-shrink:0;width:2rem;}
+.stmt-t{font-family:'Syne',sans-serif;font-weight:500;font-size:clamp(1.1rem,2vw,1.6rem);line-height:1.2;transition:color .2s;}
+.stmt:hover .stmt-t{color:var(--green);}
+.stmt-s{margin-left:auto;font-size:.82rem;color:var(--faint);max-width:200px;text-align:right;line-height:1.6;flex-shrink:0;}
+
+/* ════════════════════════════════
+   CTA
+════════════════════════════════ */
+#cta{text-align:center;padding:8rem 2.5rem;border-bottom:none;overflow:hidden;}
+.cta-orb{position:absolute;top:50%;left:50%;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(0,255,136,.07) 0%,transparent 70%);transform:translate(-50%,-50%);pointer-events:none;animation:breathe 6s ease-in-out infinite;}
+.cta-label{font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;color:var(--faint);margin-bottom:1.25rem;position:relative;}
+.cta-h{font-family:'Syne',sans-serif;font-weight:500;font-size:clamp(2.2rem,6vw,4.5rem);line-height:1.06;margin-bottom:1.5rem;position:relative;}
+.cta-h .g{color:var(--green);}
+.cta-sub{font-size:.82rem;color:var(--muted);max-width:380px;margin:0 auto 2.5rem;line-height:1.9;position:relative;}
+.cta-btns{display:flex;gap:.85rem;justify-content:center;flex-wrap:wrap;position:relative;}
+
+/* ════════════════════════════════
+   FOOTER
+════════════════════════════════ */
+footer{padding:3rem 2.5rem 2rem;border-top:1px solid var(--border);position:relative;overflow:hidden;}
+.foot-ghost{position:absolute;bottom:-1.5rem;left:50%;transform:translateX(-50%);font-family:'Syne',sans-serif;font-weight:500;font-size:clamp(5rem,22vw,16rem);line-height:1;color:rgba(0,255,136,.03);white-space:nowrap;pointer-events:none;letter-spacing:-.03em;user-select:none;}
+.foot-top{display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-bottom:3rem;position:relative;}
+.foot-col-label{font-size:.6rem;letter-spacing:.18em;text-transform:uppercase;color:var(--faint);margin-bottom:1.25rem;}
+.foot-links{list-style:none;display:flex;flex-direction:column;gap:.75rem;}
+.foot-links a{font-size:.82rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-decoration:none;transition:color .2s;}
+.foot-links a:hover{color:var(--green);}
+.foot-bottom{display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--border);padding-top:1.5rem;position:relative;}
+.foot-logo{font-family:'Syne',sans-serif;font-weight:500;font-size:.9rem;}
+.foot-logo span{color:var(--green);}
+.foot-copy{font-size:.6rem;letter-spacing:.1em;color:var(--faint);}
+
+/* ════════════════════════════════
+   RESPONSIVE
+════════════════════════════════ */
+@media(max-width:768px){
+  body{cursor:auto;}
+  #cur,#cur-ring{display:none;}
+  nav{padding:1rem 1.5rem;}
+  .n-links{display:none;}
+  section,#cta{padding-left:1.5rem;padding-right:1.5rem;}
+  .hero{padding-left:1.5rem;padding-right:1.5rem;padding-bottom:4rem;}
+  .hero-bottom{flex-direction:column;align-items:flex-start;}
+  .hero-btns{align-items:flex-start;}
+  .svc-grid{grid-template-columns:1fr;}
+  .proc-grid{grid-template-columns:1fr;}
+  footer{padding:2.5rem 1.5rem 1.5rem;}
+  .foot-top{grid-template-columns:1fr 1fr;}
+  .foot-bottom{flex-direction:column;gap:1rem;text-align:center;}
+  .stmt-s{display:none;}
+  .stat-val{font-size:clamp(4rem,20vw,8rem);}
+}
+
+/* ─── STAT SCAN LINE ─── */
+/* ─── STATS VAPI STYLE ─── */
+.stat-item{
+  position:relative;overflow:hidden;
+  padding:5rem 2.5rem;
+  border-bottom:1px solid var(--border);
+}
+.stat-item:last-child{border-bottom:none;}
+.stat-label{
+  font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;
+  color:rgba(240,240,240,.3);margin-bottom:.75rem;display:block;
+  font-family:'DM Mono',monospace;
+}
+.stat-val{
+  font-family:'Syne',sans-serif;
+  font-weight:300;
+  font-size:clamp(5.5rem,22vw,15rem);
+  line-height:.88;
+  letter-spacing:-.04em;
+  color:#f0ece0;
+  display:flex;align-items:baseline;gap:.1em;
+}
+.stat-val .g{
+  color:var(--green);
+  font-weight:300;
+}
+.stat-num{display:inline-block;font-variant-numeric:tabular-nums;}
+.stat-scan{
+  position:absolute;top:0;left:-100%;width:100%;height:100%;
+  background:linear-gradient(90deg,transparent 0%,rgba(0,255,136,.12) 50%,transparent 100%);
+  pointer-events:none;z-index:2;
+  transition:none;
+}
+.stat-item.scanned .stat-scan{
+  animation:scan-sweep .7s ease-out forwards;
+}
+@keyframes scan-sweep{
+  from{left:-100%}
+  to{left:200%}
+}
+
+/* ─── STAT PULSE RINGS ─── */
+.stat-pulse{
+  position:absolute;bottom:2rem;right:2.5rem;
+  width:60px;height:60px;
+  pointer-events:none;z-index:1;
+}
+.stat-pulse::before,.stat-pulse::after{
+  content:'';position:absolute;inset:0;
+  border-radius:50%;
+  border:1px solid rgba(0,255,136,.5);
+  opacity:0;
+}
+.stat-item.scanned .stat-pulse::before{
+  animation:pulse-ring 1.4s ease-out .5s forwards;
+}
+.stat-item.scanned .stat-pulse::after{
+  animation:pulse-ring 1.4s ease-out .8s forwards;
+}
+@keyframes pulse-ring{
+  0%{transform:scale(.5);opacity:.8}
+  100%{transform:scale(3);opacity:0}
+}
+
+/* ─── SCRAMBLE BASE ─── */
+.stat-num{display:inline-block;font-variant-numeric:tabular-nums;}
+</style>
+</head>
+<body class="loading">
+
+<!-- ═══ GREEN CRT LOADER ═══ -->
+<div id="loader">
+  <div class="l-vignette"></div>
+  <div class="l-inner">
+    <div class="l-logo-row">
+      <div class="l-chip">
+        <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="14" y="14" width="36" height="36" rx="3" stroke="#00cc44" stroke-width="1.5"/>
+          <rect x="20" y="20" width="24" height="24" rx="1.5" fill="rgba(0,255,136,.1)" stroke="#00cc44" stroke-width="1"/>
+          <line x1="6" y1="24" x2="14" y2="24" stroke="#00FF88" stroke-width="2"/><line x1="6" y1="32" x2="14" y2="32" stroke="#00cc44" stroke-width="2"/><line x1="6" y1="40" x2="14" y2="40" stroke="#008833" stroke-width="2"/>
+          <line x1="50" y1="24" x2="58" y2="24" stroke="#008833" stroke-width="2"/><line x1="50" y1="32" x2="58" y2="32" stroke="#00FF88" stroke-width="2"/><line x1="50" y1="40" x2="58" y2="40" stroke="#00cc44" stroke-width="2"/>
+          <circle cx="32" cy="32" r="4" fill="none" stroke="#00cc44" stroke-width="1.5"/>
+          <circle cx="32" cy="32" r="2" fill="#00FF88"/>
+        </svg>
+      </div>
+      <div class="l-word" id="l-word">TW.AI</div>
+    </div>
+    <div class="l-sub" id="l-sub">TW.AI Digital Agency<br>Version 1.0</div>
+    <div class="l-bar-wrap"><div class="l-bar-inner" id="l-bar"></div></div>
+    <div class="l-pct" id="l-pct">Loading... 0%</div>
+    <div class="l-copy" id="l-copy">Copyright (c) TW.AI 2026.<br>All Rights Reserved.</div>
+  </div>
+</div>
+
+<!-- ═══ CURSOR ═══ -->
+<div id="cur"></div>
+<div id="cur-ring"></div>
+
+<!-- ═══ MOBILE MENU ═══ -->
+<div id="mobile-menu">
+  <button class="mm-close" id="mm-close" onclick="toggleMenu()">✕ Close</button>
+  <a class="mm-item" data-target="services">Services</a>
+  <a class="mm-item" data-target="usecases">Use Cases</a>
+  <a class="mm-item" data-target="stats">Results</a>
+  <a class="mm-item" data-target="process">How We Work</a>
+  <a class="mm-item" data-target="cta">Contact</a>
+</div>
+
+<!-- ═══ NAV ═══ -->
+<nav id="nav">
+  <a href="#" class="n-logo">TW<span>.AI</span></a>
+  <ul class="n-links">
+    <li><a href="#services">Services</a></li>
+    <li><a href="#usecases">Use Cases</a></li>
+    <li><a href="#stats">Results</a></li>
+    <li><a href="#cta">Contact</a></li>
+  </ul>
+  <div class="n-right">
+    <a href="mailto:hello@twaiworld.com" class="n-cta">Let's Build</a>
+    <div class="n-menu-btn" onclick="toggleMenu()">
+      <div class="n-dots">
+        <span></span><span></span><span></span>
+        <span></span><span></span><span></span>
+        <span></span><span></span><span></span>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- ═══ HERO ═══ -->
+<section class="hero" id="home">
+  <div class="dot-bg"></div>
+  <div class="hero-orb"></div>
+
+  <div class="hero-badge" id="hbadge"><span class="pulse"></span>Available for new projects</div>
+  <h1 class="hero-h" id="hero-h">
+    We Make<br>
+    <span class="g">AI</span> Work<br>
+    <span class="d">for You.</span>
+  </h1>
+  <div class="hero-bottom" id="hero-bot">
+    <p class="hero-sub">AI-augmented digital experiences — social, web, apps, and automation. Signal-grade work for brands that want to move fast and look incredible doing it.</p>
+    <div class="hero-btns">
+      <a href="https://calendly.com/join-twai" target="_blank" class="btn-pill-primary">Start a Project</a>
+      <a href="#services" class="btn-pill-outline">See What We Do</a>
+    </div>
+  </div>
+
+  <!-- AUDIO VISUALIZER BARS -->
+  <div class="visualizer" id="viz"></div>
+</section>
+
+<!-- ═══ MARQUEE ═══ -->
+<div class="mwrap">
+  <div class="mtrack">
+    <span class="mi">Social Media AI <span class="md"></span></span>
+    <span class="mi">Web Development <span class="md"></span></span>
+    <span class="mi">AI Implementation <span class="md"></span></span>
+    <span class="mi">Mobile Apps <span class="md"></span></span>
+    <span class="mi">Digital Marketing <span class="md"></span></span>
+    <span class="mi">Business Automation <span class="md"></span></span>
+    <span class="mi">GenAI Workflows <span class="md"></span></span>
+    <span class="mi">Agentic AI <span class="md"></span></span>
+    <span class="mi">Social Media AI <span class="md"></span></span>
+    <span class="mi">Web Development <span class="md"></span></span>
+    <span class="mi">AI Implementation <span class="md"></span></span>
+    <span class="mi">Mobile Apps <span class="md"></span></span>
+    <span class="mi">Digital Marketing <span class="md"></span></span>
+    <span class="mi">Business Automation <span class="md"></span></span>
+    <span class="mi">GenAI Workflows <span class="md"></span></span>
+    <span class="mi">Agentic AI <span class="md"></span></span>
+  </div>
+</div>
+
+<!-- ═══ USE CASES ═══ -->
+<section id="usecases">
+  <div class="dot-bg" style="opacity:.15;"></div>
+  <p class="sec-label rev">Use Cases</p>
+  <h2 class="sec-h rev" style="font-size:clamp(2rem,5vw,3.5rem);max-width:560px;">Feels smart.<br><span class="g">Moves the needle.</span></h2>
+  <div class="uc-tabs rev" style="margin-top:2rem;">
+    <button class="uc-tab active" onclick="switchTab(this,'social')">Social Media</button>
+    <button class="uc-tab" onclick="switchTab(this,'web')">Web & Apps</button>
+    <button class="uc-tab" onclick="switchTab(this,'ai')">AI Automation</button>
+  </div>
+  <div class="uc-content rev" id="uc-content">
+    <p class="sec-label" id="uc-label" style="margin-bottom:.75rem;">Social Media</p>
+    <h3 class="uc-big" id="uc-h"><span class="g">TW.AI</span> powers brands with always-on AI content.</h3>
+    <p class="uc-desc" id="uc-d">From Instagram reels to LinkedIn carousels — our AI pipelines produce, schedule and optimise content across every platform. Consistent signal. Zero burnout.</p>
+    <div class="uc-btns">
+      <a href="https://calendly.com/join-twai" target="_blank" class="btn-pill-primary">Start a Project</a>
+      <a href="#" class="btn-pill-outline">See Examples</a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ SERVICES ═══ -->
+<section id="services" style="background:var(--surface);">
+  <p class="sec-label rev">What We Do</p>
+  <h2 class="sec-h rev">Six ways we make AI work<br>for <span class="g">your business.</span></h2>
+  <p class="rev" style="color:var(--muted);font-size:.82rem;line-height:1.9;max-width:480px;margin-top:.5rem;">We don't do generic. Every service is AI-augmented, outcome-driven, built to compound. We don't troubleshoot printers.</p>
+  <div class="svc-grid">
+    <div class="svc-card rev"><p class="svc-n">01</p><h3 class="svc-name">Social Media Management</h3><p class="svc-desc">AI-powered content pipelines that produce, schedule, and optimise across every platform. On-brand. Always on.</p></div>
+    <div class="svc-card rev"><p class="svc-n">02</p><h3 class="svc-name">Digital Marketing</h3><p class="svc-desc">Data-driven campaigns with AI targeting. Ads, SEO, and growth loops that actually convert.</p></div>
+    <div class="svc-card rev"><p class="svc-n">03</p><h3 class="svc-name">Website Development</h3><p class="svc-desc">Fast, beautiful, and engineered for performance. From landing pages to full platforms — built to last.</p></div>
+    <div class="svc-card rev"><p class="svc-n">04</p><h3 class="svc-name">Mobile & Web Apps</h3><p class="svc-desc">Product thinking meets execution. We design and ship apps that users actually return to.</p></div>
+    <div class="svc-card rev"><p class="svc-n">05</p><h3 class="svc-name">AI Implementation</h3><p class="svc-desc">Chatbots, voice agents, document automation, custom model integrations. We plug AI in properly.</p></div>
+    <div class="svc-card rev"><p class="svc-n">06</p><h3 class="svc-name">Business Improvement</h3><p class="svc-desc">Audit workflows, find bottlenecks, build AI-powered systems that scale without adding headcount.</p></div>
+  </div>
+</section>
+
+<!-- ═══ STATS — scramble + scan + pulse ═══ -->
+<section id="stats" style="padding:0;background:var(--black);">
+  <canvas id="rain-canvas" style="position:absolute;inset:0;width:100%;height:100%;opacity:.12;pointer-events:none;z-index:0;"></canvas>
+  <div class="stat-item" data-val="2.7" data-suffix="×">
+    <span class="stat-label">Results — Lead Quality</span>
+    <div class="stat-val"><span class="stat-num">--</span><span class="g">×</span></div>
+    <div class="stat-scan"></div>
+    <div class="stat-pulse"></div>
+  </div>
+  <div class="stat-item" data-val="35" data-suffix="%">
+    <span class="stat-label">Onboarding Friction Reduced</span>
+    <div class="stat-val"><span class="stat-num">--</span><span class="g">%</span></div>
+    <div class="stat-scan"></div>
+    <div class="stat-pulse"></div>
+  </div>
+  <div class="stat-item" data-val="80" data-suffix="+">
+    <span class="stat-label">Products Shipped</span>
+    <div class="stat-val"><span class="stat-num">--</span><span class="g">+</span></div>
+    <div class="stat-scan"></div>
+    <div class="stat-pulse"></div>
+  </div>
+  <div class="stat-item" data-val="14" data-suffix="+">
+    <span class="stat-label">Years of Experience</span>
+    <div class="stat-val"><span class="stat-num">--</span><span class="g">+</span></div>
+    <div class="stat-scan"></div>
+    <div class="stat-pulse"></div>
+  </div>
+</section>
+
+<!-- ═══ MANIFESTO ═══ -->
+<section id="manifesto">
+  <p class="sec-label rev">Why TW.AI</p>
+  <h2 class="sec-h rev">We're not a vendor.<br>We're a <span class="g">signal.</span></h2>
+  <div style="margin-top:2.5rem;">
+    <div class="stmt rev"><span class="stmt-n">01</span><span class="stmt-t">AI is not optional anymore.</span><span class="stmt-s">Businesses that don't adopt AI by 2026 will be replaced by those that do.</span></div>
+    <div class="stmt rev"><span class="stmt-n">02</span><span class="stmt-t">Speed is the new quality.</span><span class="stmt-s">We ship in days, not months. Craft doesn't get sacrificed.</span></div>
+    <div class="stmt rev"><span class="stmt-n">03</span><span class="stmt-t">We build. We don't just consult.</span><span class="stmt-s">Decks are nice. Working products are better. We deliver both.</span></div>
+    <div class="stmt rev"><span class="stmt-n">04</span><span class="stmt-t">Faceless. Focused. Formidable.</span><span class="stmt-s">No founder cult. Results speak louder than any personal brand.</span></div>
+  </div>
+</section>
+
+<!-- ═══ PROCESS ═══ -->
+<section id="process" style="background:var(--surface);">
+  <p class="sec-label rev">How It Works</p>
+  <h2 class="sec-h rev">Try in days.<br><span class="g">Deploy in weeks.</span></h2>
+  <div class="proc-grid">
+    <div class="proc-card rev"><p class="proc-n">01 — Discover</p><h3 class="proc-t">Understand the problem</h3><p class="proc-d">Audit your state, map the gaps, define the outcome that actually matters to your business.</p></div>
+    <div class="proc-card rev"><p class="proc-n">02 — Design</p><h3 class="proc-t">Build the blueprint</h3><p class="proc-d">Strategy, architecture, and UX — designed for AI from the ground up. No retrofitting.</p></div>
+    <div class="proc-card rev"><p class="proc-n">03 — Deploy</p><h3 class="proc-t">Ship fast, ship right</h3><p class="proc-d">AI-augmented workflows. What takes others months takes us days. Without sacrificing craft.</p></div>
+    <div class="proc-card rev"><p class="proc-n">04 — Scale</p><h3 class="proc-t">Compound the results</h3><p class="proc-d">Monitor, optimise, iterate. Your AI stack gets smarter every week. So does your ROI.</p></div>
+  </div>
+</section>
+
+<!-- ═══ CTA ═══ -->
+<section id="cta">
+  <div class="cta-orb"></div>
+  <p class="cta-label rev">Ready to move?</p>
+  <h2 class="cta-h rev">Let's build something<br><span class="g">that actually works.</span></h2>
+  <p class="cta-sub rev">No fluff. No retainers for retainers' sake. Just focused AI work that moves your business forward.</p>
+  <div class="cta-btns rev">
+    <a href="https://calendly.com/join-twai" target="_blank" class="btn-pill-primary">Start a Project</a>
+    <a href="https://instagram.com/tw.aiworld" target="_blank" class="btn-pill-outline">Follow @tw.aiworld</a>
+  </div>
+</section>
+
+<!-- ═══ FOOTER ═══ -->
+<footer>
+  <div class="foot-ghost">TW.AI</div>
+  <div class="foot-top">
+    <div>
+      <p class="foot-col-label">Product</p>
+      <ul class="foot-links">
+        <li><a href="#services">Services</a></li>
+        <li><a href="#usecases">Use Cases</a></li>
+        <li><a href="#process">How It Works</a></li>
+        <li><a href="#stats">Results</a></li>
+      </ul>
+    </div>
+    <div>
+      <p class="foot-col-label">Company</p>
+      <ul class="foot-links">
+        <li><a href="https://instagram.com/tw.aiworld" target="_blank">Instagram</a></li>
+        <li><a href="https://facebook.com" target="_blank">Facebook</a></li>
+        <li><a href="mailto:hello@twaiworld.com">Contact</a></li>
+        <li><a href="#">Privacy Policy</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="foot-bottom">
+    <div class="foot-logo">TW<span>.AI</span></div>
+    <p class="foot-copy">© 2026 TW.AI — We Make AI Work for You</p>
+  </div>
+</footer>
+
+<script>
+gsap.registerPlugin(ScrollTrigger);
+
+// ─── CURSOR ───
+const cur=document.getElementById('cur'),ring=document.getElementById('cur-ring');
+let mx=0,my=0,rx=0,ry=0;
+document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;});
+(function tick(){cur.style.left=mx+'px';cur.style.top=my+'px';rx+=(mx-rx)*.12;ry+=(my-ry)*.12;ring.style.left=rx+'px';ring.style.top=ry+'px';requestAnimationFrame(tick);})();
+document.querySelectorAll('a,button,.btn-pill-primary,.btn-pill-outline,.uc-tab,.mm-item').forEach(el=>{
+  el.addEventListener('mouseenter',()=>{ring.style.width='46px';ring.style.height='46px';ring.style.borderColor='rgba(0,255,136,.65)';});
+  el.addEventListener('mouseleave',()=>{ring.style.width='34px';ring.style.height='34px';ring.style.borderColor='rgba(0,255,136,.35)';});
+});
+
+// ─── MOBILE MENU ───
+let menuOpen=false;
+function toggleMenu(){
+  menuOpen=!menuOpen;
+  document.getElementById('mobile-menu').classList.toggle('open',menuOpen);
+  document.body.style.overflow=menuOpen?'hidden':'';
+}
+
+// Mobile menu nav — close then scroll
+document.querySelectorAll('.mm-item[data-target]').forEach(item=>{
+  item.addEventListener('click',()=>{
+    const targetId=item.dataset.target;
+    // Close menu first
+    menuOpen=false;
+    document.getElementById('mobile-menu').classList.remove('open');
+    document.body.style.overflow='';
+    // Wait for menu slide-out transition (450ms), then scroll
+    setTimeout(()=>{
+      const el=document.getElementById(targetId);
+      if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
+    },460);
+  });
+});
+
+// ─── CRT LOADER ───
+(function(){
+  const loader=document.getElementById('loader');
+  const word=document.getElementById('l-word');
+  const sub=document.getElementById('l-sub');
+  const pct=document.getElementById('l-pct');
+  const copy=document.getElementById('l-copy');
+  const barEl=document.getElementById('l-bar');
+  const BLOCKS=26;
+  const blocks=[];
+  for(let i=0;i<BLOCKS;i++){const b=document.createElement('div');b.className='l-block';barEl.appendChild(b);blocks.push(b);}
+  gsap.set([word,sub,pct,copy],{opacity:0});
+  const tl=gsap.timeline();
+  // Flicker on
+  tl.to(word,{opacity:1,duration:.05,onComplete:()=>{
+    let n=0;const f=setInterval(()=>{word.style.opacity=n%2?'1':'0';n++;if(n>7){clearInterval(f);word.style.opacity='1';}},75);
+  }},0.3);
+  tl.to(sub,{opacity:1,duration:.35},0.95);
+  tl.to(copy,{opacity:1,duration:.3},1.2);
+  tl.to(pct,{opacity:1,duration:.2},1.5);
+  // Fill blocks
+  const obj={n:0};
+  tl.to(obj,{n:BLOCKS,duration:2.1,ease:'power1.inOut',onUpdate:function(){
+    const f=Math.floor(this.targets()[0].n);
+    pct.textContent='Loading... '+Math.round((f/BLOCKS)*100)+'%';
+    blocks.forEach((b,i)=>b.classList.toggle('on',i<f));
+  }},1.5);
+  tl.to({},{duration:.4},3.7);
+  // Glitch + fade
+  tl.to(loader,{duration:.06,onStart:()=>{
+    loader.style.transform='translate(3px,1px)';
+    setTimeout(()=>{loader.style.transform='translate(-2px,0)';},55);
+    setTimeout(()=>{loader.style.transform='';},110);
+  }},4.2);
+  tl.to(loader,{opacity:0,duration:.45,ease:'power2.in',onComplete:()=>{
+    loader.remove();
+    document.body.classList.remove('loading');
+    initSite();
+  }},4.3);
+})();
+
+// ─── SITE INIT ───
+function initSite(){
+  // Nav
+  gsap.to('#nav',{opacity:1,duration:.6});
+  // Hero
+  gsap.to('#hbadge',{opacity:1,duration:.5,delay:.1,ease:'power3.out'});
+  gsap.to('#hero-h',{opacity:1,y:0,duration:.8,delay:.25,ease:'power3.out'});
+  gsap.to('#hero-bot',{opacity:1,y:0,duration:.7,delay:.45,ease:'power3.out'});
+  // Visualizer
+  buildViz();
+  gsap.to('#viz',{opacity:1,duration:.6,delay:.7});
+  // Scroll reveals
+  document.querySelectorAll('.rev').forEach(el=>{
+    ScrollTrigger.create({trigger:el,start:'top 92%',once:true,onEnter:()=>el.classList.add('on')});
+  });
+  // Rain canvas
+  initRain();
+  ScrollTrigger.refresh();
+  initStatAnimations();
+}
+
+// ─── AUDIO VISUALIZER ───
+function buildViz(){
+  const viz=document.getElementById('viz');
+  const heights=[20,35,55,70,85,95,80,65,75,90,70,55,40,60,80,70,50,65,85,95,75,60,45,55,70,85,65,50,40,55,70,80,60,45,55,65,80,90,70,55,40,55,70,85,65,50];
+  heights.forEach((h,i)=>{
+    const b=document.createElement('div');
+    b.className='v-bar';
+    b.style.height=h+'%';
+    const dur=(0.6+Math.random()*1.0).toFixed(2)+'s';
+    const delay=(Math.random()*1.2).toFixed(2)+'s';
+    b.style.animationDuration=dur;
+    b.style.animationDelay=delay;
+    b.style.opacity=(0.3+Math.random()*0.5).toFixed(2);
+    viz.appendChild(b);
+  });
+}
+
+// ─── RAIN CANVAS (vapi stats section) ───
+function initRain(){
+  const canvas=document.getElementById('rain-canvas');
+  if(!canvas)return;
+  const ctx=canvas.getContext('2d');
+  const COLORS=['#00FF88','#00cc66','#008833','#00aa44'];
+  function resize(){
+    const rect=canvas.parentElement.getBoundingClientRect();
+    canvas.width=rect.width;
+    canvas.height=rect.height;
+  }
+  resize();
+  window.addEventListener('resize',resize);
+  const drops=[];
+  const COLS=Math.floor(canvas.width/22);
+  for(let i=0;i<COLS;i++){
+    drops.push({x:i*22+Math.random()*10,y:Math.random()*-500,speed:40+Math.random()*80,len:30+Math.random()*60,color:COLORS[Math.floor(Math.random()*COLORS.length)],alpha:0.4+Math.random()*0.5});
+  }
+  let last=0;
+  function draw(ts){
+    const dt=Math.min((ts-last)/1000,0.05);
+    last=ts;
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    drops.forEach(d=>{
+      d.y+=d.speed*dt;
+      if(d.y>canvas.height+d.len){d.y=-d.len-Math.random()*200;d.x=Math.random()*canvas.width;}
+      const grad=ctx.createLinearGradient(d.x,d.y-d.len,d.x,d.y);
+      grad.addColorStop(0,'transparent');
+      grad.addColorStop(1,d.color);
+      ctx.strokeStyle=grad;
+      ctx.globalAlpha=d.alpha;
+      ctx.lineWidth=1.5;
+      ctx.beginPath();
+      ctx.moveTo(d.x,d.y-d.len);
+      ctx.lineTo(d.x,d.y);
+      ctx.stroke();
+    });
+    ctx.globalAlpha=1;
+    requestAnimationFrame(draw);
+  }
+  requestAnimationFrame(draw);
+}
+
+// ─── USE CASE TABS ───
+const tabContent={
+  social:{label:'Social Media',h:'<span class="g">TW.AI</span> powers brands with always-on AI content.',d:'From Instagram reels to LinkedIn carousels — AI pipelines that produce, schedule and optimise content across every platform. Consistent signal. Zero burnout.'},
+  web:{label:'Web & Apps',h:'We ship products <span class="g">in days,</span> not months.',d:'Beautiful, fast, and built to last. From landing pages to full-stack applications — product thinking meets AI-accelerated execution.'},
+  ai:{label:'AI Automation',h:'We plug AI into your business <span class="g">properly.</span>',d:'Chatbots, voice agents, document automation, custom model integrations — we find the bottlenecks and build AI systems that scale without adding headcount.'}
+};
+function switchTab(el,key){
+  document.querySelectorAll('.uc-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  const c=tabContent[key];
+  document.getElementById('uc-label').textContent=c.label;
+  document.getElementById('uc-h').innerHTML=c.h;
+  document.getElementById('uc-d').textContent=c.d;
+}
+
+// ─── NAV SCROLL ───
+window.addEventListener('scroll',()=>{
+  document.getElementById('nav').classList.toggle('scrolled',scrollY>60);
+});
+
+// ─── STAT SCRAMBLE + SCAN + PULSE ───
+function initStatAnimations(){
+  const CHARS='0123456789';
+  const items=document.querySelectorAll('.stat-item');
+  
+  items.forEach((item,idx)=>{
+    const target=item.dataset.val;
+    const numEl=item.querySelector('.stat-num');
+    
+    const obs=new IntersectionObserver((entries)=>{
+      entries.forEach(entry=>{
+        if(!entry.isIntersecting) return;
+        obs.disconnect();
+        
+        // 1. Scan line sweep
+        setTimeout(()=>item.classList.add('scanned'), idx*80);
+        
+        // 2. Number scramble → lock
+        let frame=0;
+        const TOTAL_FRAMES=28;
+        const LOCK_FRAME=20;
+        
+        function scramble(){
+          if(frame<LOCK_FRAME){
+            // Generate random chars same length as target
+            const len=target.replace('.','').length;
+            let fake='';
+            for(let i=0;i<len;i++){
+              if(target[i]==='.')fake+='.';
+              else fake+=CHARS[Math.floor(Math.random()*CHARS.length)];
+            }
+            numEl.textContent=fake;
+            numEl.style.color='rgba(0,255,136,.5)';
+            numEl.style.letterSpacing='.05em';
+            frame++;
+            requestAnimationFrame(scramble);
+          } else if(frame<TOTAL_FRAMES){
+            // Gradually stabilize — mix real and fake
+            const progress=(frame-LOCK_FRAME)/(TOTAL_FRAMES-LOCK_FRAME);
+            const result=target.split('').map((ch,i)=>{
+              if(ch==='.') return ch;
+              return Math.random()<progress ? ch : CHARS[Math.floor(Math.random()*CHARS.length)];
+            }).join('');
+            numEl.textContent=result;
+            numEl.style.color=`rgba(240,240,240,${0.5+progress*0.5})`;
+            frame++;
+            requestAnimationFrame(scramble);
+          } else {
+            // Lock onto real value
+            numEl.textContent=target;
+            numEl.style.color='';
+            numEl.style.letterSpacing='';
+            // Flash green on lock
+            numEl.style.textShadow='0 0 40px rgba(0,255,136,.6)';
+            setTimeout(()=>numEl.style.textShadow='',600);
+          }
+        }
+        
+        setTimeout(scramble, idx*80 + 100);
+      });
+    },{threshold:0.3});
+    
+    obs.observe(item);
+  });
+}
+
+</script>
+</body>
+</html>
