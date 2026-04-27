@@ -64,7 +64,7 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
 /* ════════════════════════════════
    NAV
 ════════════════════════════════ */
-nav{position:fixed;top:0;left:0;right:0;z-index:500;display:flex;align-items:center;justify-content:space-between;padding:1.1rem 2.5rem;border-bottom:1px solid transparent;transition:background .4s,border-color .4s;opacity:0;}
+nav{position:fixed;top:0;left:0;right:0;z-index:500;display:flex;align-items:center;justify-content:space-between;padding:1.1rem 6rem;border-bottom:1px solid transparent;transition:background .4s,border-color .4s;opacity:0;}
 nav.scrolled{background:rgba(8,10,8,.93);backdrop-filter:blur(18px);border-color:var(--border);}
 .n-logo{font-family:'Syne',sans-serif;font-weight:400;font-size:1.1rem;letter-spacing:.04em;color:var(--white);text-decoration:none;}
 .n-logo span{color:var(--green);}
@@ -89,7 +89,7 @@ nav.scrolled{background:rgba(8,10,8,.93);backdrop-filter:blur(18px);border-color
 /* ════════════════════════════════
    HERO
 ════════════════════════════════ */
-.hero{min-height:100vh;display:flex;flex-direction:column;justify-content:flex-end;padding:0 2.5rem 4.5rem;position:relative;border-bottom:1px solid var(--border);overflow:hidden;}
+.hero{min-height:100vh;display:flex;flex-direction:column;justify-content:flex-end;padding:0 6rem 5rem;position:relative;border-bottom:1px solid var(--border);overflow:hidden;}
 
 /* Green orb glow */
 .hero-orb{position:absolute;top:-10%;left:50%;transform:translateX(-50%);width:700px;height:700px;border-radius:50%;background:radial-gradient(circle,rgba(0,255,136,.06) 0%,transparent 65%);pointer-events:none;animation:breathe 8s ease-in-out infinite;}
@@ -212,7 +212,7 @@ section{padding:6rem 2.5rem;border-bottom:1px solid var(--border);position:relat
 /* ════════════════════════════════
    FOOTER
 ════════════════════════════════ */
-footer{padding:3rem 2.5rem 2rem;border-top:1px solid var(--border);position:relative;overflow:hidden;}
+footer{padding:3rem 6rem 2rem;border-top:1px solid var(--border);position:relative;overflow:hidden;}
 .foot-ghost{position:absolute;bottom:-1.5rem;left:50%;transform:translateX(-50%);font-family:'Syne',sans-serif;font-weight:500;font-size:clamp(5rem,22vw,16rem);line-height:1;color:rgba(0,255,136,.03);white-space:nowrap;pointer-events:none;letter-spacing:-.03em;user-select:none;}
 .foot-top{display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-bottom:3rem;position:relative;}
 .foot-col-label{font-size:.6rem;letter-spacing:.18em;text-transform:uppercase;color:var(--faint);margin-bottom:1.25rem;}
@@ -261,7 +261,7 @@ footer{padding:3rem 2.5rem 2rem;border-top:1px solid var(--border);position:rela
 .stat-val{
   font-family:'Syne',sans-serif;
   font-weight:300;
-  font-size:clamp(5.5rem,22vw,15rem);
+  font-size:clamp(4rem,12vw,10rem);
   line-height:.88;
   letter-spacing:-.04em;
   color:#f0ece0;
@@ -311,6 +311,36 @@ footer{padding:3rem 2.5rem 2rem;border-top:1px solid var(--border);position:rela
 
 /* ─── SCRAMBLE BASE ─── */
 .stat-num{display:inline-block;font-variant-numeric:tabular-nums;}
+
+/* ── DESKTOP FIXES ── */
+@media(min-width:769px){
+  /* NAV */
+  nav{padding:1.2rem 6rem;}
+  /* HERO */
+  .hero{padding:0 6rem 5rem;}
+  .hname{font-size:clamp(5rem,9vw,10rem);max-width:none;}
+  #hero-bot{display:grid;grid-template-columns:1fr auto;align-items:flex-end;gap:4rem;width:100%;}
+  .hero-sub{font-size:.95rem;max-width:480px;}
+  .hero-btns{flex-shrink:0;align-items:flex-end;}
+  /* SECTIONS */
+  section{padding:7rem 6rem;}
+  .sec-h{font-size:clamp(2.5rem,4.5vw,4rem);}
+  /* USE CASES */
+  #usecases .uc-big{font-size:clamp(2.2rem,3.5vw,3.5rem);max-width:900px;}
+  /* MANIFESTO */
+  .stmt-t{font-size:clamp(1.5rem,2.5vw,2.2rem);}
+  /* STATS - 2 col */
+  #stats{display:grid !important;grid-template-columns:1fr 1fr !important;}
+  .stat-item{padding:5rem 6rem;}
+  .stat-val{font-size:clamp(5rem,11vw,9rem);}
+  /* PROCESS - 4 col */
+  .pgrid{grid-template-columns:repeat(4,1fr);}
+  /* CTA */
+  #cta{padding:9rem 6rem;}
+  .cta-h{font-size:clamp(3rem,5.5vw,5.5rem);}
+  /* FOOTER */
+  footer{padding:3rem 6rem 2rem;}
+}
 </style>
 </head>
 <body class="loading">
@@ -456,8 +486,8 @@ footer{padding:3rem 2.5rem 2rem;border-top:1px solid var(--border);position:rela
 </section>
 
 <!-- ═══ STATS — scramble + scan + pulse ═══ -->
-<section id="stats" style="padding:0;background:var(--black);">
-  <canvas id="rain-canvas" style="position:absolute;inset:0;width:100%;height:100%;opacity:.12;pointer-events:none;z-index:0;"></canvas>
+<section id="stats" style="padding:0;background:var(--black);display:grid;grid-template-columns:1fr 1fr;">
+  <canvas id="rain-canvas" style="position:absolute;inset:0;width:100%;height:100%;opacity:.12;pointer-events:none;z-index:0;display:none;"></canvas>
   <div class="stat-item" data-val="2.7" data-suffix="×">
     <span class="stat-label">Results — Lead Quality</span>
     <div class="stat-val"><span class="stat-num">--</span><span class="g">×</span></div>
@@ -753,9 +783,9 @@ function initStatAnimations(){
         function scramble(){
           if(frame<LOCK_FRAME){
             // Generate random chars same length as target
-            const len=target.replace('.','').length;
+            // target length handled per char
             let fake='';
-            for(let i=0;i<len;i++){
+            for(let i=0;i<target.length;i++){
               if(target[i]==='.')fake+='.';
               else fake+=CHARS[Math.floor(Math.random()*CHARS.length)];
             }
